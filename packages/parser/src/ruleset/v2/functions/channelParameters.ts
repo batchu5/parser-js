@@ -4,11 +4,12 @@ import { getMissingProps, getRedundantProps, parseUrlVariables } from '../../uti
 
 import type { IFunctionResult } from '@stoplight/spectral-core';
 
-export const channelParameters = createRulesetFunction<{ parameters: Record<string, unknown> }, null>(
+export const channelParameters = createRulesetFunction<{ address : string, parameters: Record<string, unknown> }, null>(
   {
     input: {
       type: 'object',
       properties: {
+        address: {type: 'string'},
         parameters: {
           type: 'object',
         },
@@ -18,12 +19,19 @@ export const channelParameters = createRulesetFunction<{ parameters: Record<stri
     options: null,
   },
   (targetVal, _, ctx) => {
-    const path = ctx.path[ctx.path.length - 1] as string;
+
+    const address = targetVal.address;
     const results: IFunctionResult[] = [];
 
-    const parameters = parseUrlVariables(path);
-    if (parameters.length === 0) return;
+    if (!address) {
+      results.push({
+        message: `Address is undefined.`,
+        path: [...ctx.path],
+      });
+      return results;
+    }
 
+    const parameters = parseUrlVariables(address);
     const missingParameters = getMissingProps(parameters, targetVal.parameters);
     if (missingParameters.length) {
       results.push({
